@@ -76,13 +76,16 @@ Veja o arquivo [SETUP.md](./docs/SETUP.md) para instruções detalhadas de como 
 
 ## 📖 Documentação
 
-- [Setup e Configuração](./docs/SETUP.md) - Como rodar o projeto
-- [Script de Apresentação](./docs/PRESENTATION.md) - Demo e apresentação do produto
-- [Implementação Asaas](./docs/ASAAS_INTEGRATION.md) - Checkout e pagamentos
-- [Detalhes do Beat](./docs/BEAT_DETAILS_PAGE.md) - Página de detalhes
-- [Perfil do Produtor](./docs/PRODUCER_PROFILE.md) - Perfil público
-- [Sistema de Downloads](./docs/DOWNLOAD_SYSTEM.md) - Downloads pós-pagamento
-- [Dashboard do Usuário](./docs/USER_DASHBOARD.md) - Área do usuário
+### 🚀 Começando
+- **[Setup e Configuração](./docs/SETUP.md)** - Como configurar e rodar o projeto no VSCode
+- **[Script de Apresentação](./docs/PRESENTATION.md)** - Roteiro completo para demos e pitches
+
+### 💻 Implementação
+- **[Integração Asaas](./docs/ASAAS_INTEGRATION.md)** - Checkout e pagamentos (Pix, Boleto, Cartão)
+- **[Página de Detalhes do Beat](./docs/BEAT_DETAILS_PAGE.md)** - Beat page com waveform interativa
+- **[Perfil Público do Produtor](./docs/PRODUCER_PROFILE.md)** - Página de perfil rica e envolvente
+- **[Sistema de Downloads](./docs/DOWNLOAD_SYSTEM.md)** - Downloads seguros pós-pagamento
+- **[Dashboard do Usuário](./docs/USER_DASHBOARD.md)** - Área completa do usuário (compras, favoritos, configurações)
 
 ## 🎯 Roadmap
 
