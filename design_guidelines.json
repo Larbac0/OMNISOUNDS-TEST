@@ -1,0 +1,119 @@
+{
+  "project_name": "OMINSOUNDS",
+  "design_philosophy": {
+    "identity": "The Obsidian Studio",
+    "core_principles": [
+      "Sonic Glass: Interfaces should feel like expensive audio equipment—tactile, precise, and layered.",
+      "Nocturnal Focus: Design for the 2 AM studio session. Dark, low-strain, high-contrast only where it matters.",
+      "Data as Art: Waveforms and analytics are beautiful. Treat them as hero visuals.",
+      "Anti-Slop: No generic gradients. Use grain, noise, and sharp 1px borders."
+    ],
+    "emotional_tone": "Sophisticated, Industrial, Creative, Elite"
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Manrope, sans-serif",
+      "body": "Plus Jakarta Sans, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-7xl font-bold tracking-tight leading-none",
+      "h2": "text-3xl md:text-5xl font-semibold tracking-tight",
+      "h3": "text-2xl md:text-3xl font-medium",
+      "body": "text-base leading-relaxed text-muted-foreground",
+      "caption": "text-xs font-mono uppercase tracking-widest text-muted-foreground/60"
+    },
+    "installation": "Add these fonts via Google Fonts in index.html: https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+  },
+  "colors": {
+    "theme": "dark",
+    "palette": {
+      "background": "#050505",
+      "foreground": "#FFFFFF",
+      "card": "#0A0A0A",
+      "card_foreground": "#FFFFFF",
+      "popover": "#111111",
+      "primary": "#7C3AED",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#27272A",
+      "secondary_foreground": "#FFFFFF",
+      "muted": "#18181B",
+      "muted_foreground": "#A1A1AA",
+      "accent": "#06B6D4",
+      "accent_foreground": "#000000",
+      "destructive": "#EF4444",
+      "border": "#27272A",
+      "input": "#27272A",
+      "ring": "#7C3AED"
+    },
+    "custom_tokens": {
+      "glass": "bg-black/60 backdrop-blur-xl border-white/10",
+      "neon-purple": "shadow-[0_0_20px_-5px_rgba(124,58,237,0.5)]",
+      "neon-cyan": "shadow-[0_0_20px_-5px_rgba(6,182,212,0.5)]",
+      "surface-gradient": "bg-gradient-to-b from-white/5 to-transparent"
+    }
+  },
+  "layout_strategies": {
+    "spacing": "Relaxed. Use p-8 or p-12 for section padding. Gap-6 or Gap-8 for grids.",
+    "container": "max-w-[1400px] mx-auto px-4 md:px-8",
+    "grids": {
+      "explore_beats": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 auto-rows-[minmax(100px,auto)]",
+      "dashboard_widgets": "grid grid-cols-1 md:grid-cols-4 gap-6"
+    },
+    "z_index": {
+      "player": "z-50 fixed bottom-0 left-0 right-0",
+      "nav": "z-40 fixed top-0 left-0 right-0",
+      "modal": "z-[100]"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-primary/25 transition-all duration-300 font-medium px-8 py-6",
+      "secondary": "rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 backdrop-blur-md transition-all px-6 py-6",
+      "ghost": "rounded-full hover:bg-white/5 text-muted-foreground hover:text-white transition-colors"
+    },
+    "cards": {
+      "beat_card": "group relative overflow-hidden rounded-2xl border border-white/5 bg-card/50 hover:bg-card/80 transition-all duration-300 hover:border-primary/50 hover:shadow-xl",
+      "glass_panel": "rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl shadow-2xl"
+    },
+    "inputs": {
+      "style": "bg-black/20 border-white/10 focus:border-primary/50 focus:ring-primary/20 rounded-xl h-12 text-sm placeholder:text-muted-foreground/50"
+    }
+  },
+  "assets": {
+    "images": {
+      "hero_bg": "https://images.unsplash.com/photo-1742163512400-7af30b2d17cc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHw0fHxtdXNpYyUyMHN0dWRpbyUyMHByb2R1Y2VyJTIwZGFyayUyMGFlc3RoZXRpYyUyMG5lb24lMjBsaWdodHN8ZW58MHx8fHwxNzcwOTI0ODM5fDA&ixlib=rb-4.1.0&q=85",
+      "producer_avatar_1": "https://images.unsplash.com/photo-1764014352792-6d603ba66f1e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHxwcm9kdWNlciUyMHBvcnRyYWl0JTIwaGVhZHBob25lcyUyMG1vb2R5JTIwbGlnaHRpbmd8ZW58MHx8fHwxNzcwOTI0ODQxfDA&ixlib=rb-4.1.0&q=85",
+      "producer_avatar_2": "https://images.unsplash.com/photo-1761005654142-819960af0658?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwxfHxwcm9kdWNlciUyMHBvcnRyYWl0JTIwaGVhZHBob25lcyUyMG1vb2R5JTIwbGlnaHRpbmd8ZW58MHx8fHwxNzcwOTI0ODQxfDA&ixlib=rb-4.1.0&q=85",
+      "waveform_abstract": "https://images.unsplash.com/photo-1694843689189-2ad1a6c4a364?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGF1ZGlvJTIwd2F2ZWZvcm0lMjAzZCUyMGRhcmslMjBiYWNrZ3JvdW5kJTIwbWluaW1hbGlzdHxlbnwwfHx8fDE3NzA5MjQ4NDB8MA&ixlib=rb-4.1.0&q=85"
+    },
+    "icons": "Use 'lucide-react' for all UI icons. Use thin strokes (stroke-width={1.5}) for elegance."
+  },
+  "visual_enhancers": {
+    "noise_texture": "Use a subtle SVG noise overlay with opacity-5 pointer-events-none fixed inset-0 z-[100] mix-blend-overlay",
+    "glow_effects": "Use subtle colored drop-shadows on active elements (buttons, active playing beat).",
+    "animation": {
+      "hover": "hover:-translate-y-1 hover:scale-[1.01] transition-transform duration-300 ease-out",
+      "page_transition": "animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
+    }
+  },
+  "specific_page_instructions": {
+    "global_player": "Must be a floating 'Glass Slab' at the bottom (fixed). Not full width, but centered with max-w-5xl, giving it a 'dock' feel. Include a mini waveform visualizer.",
+    "explore_page": "Use the 'Tetris Grid' pattern. Feature the 'Beat of the Week' in a col-span-2 row-span-2 large card. Standard beats in col-span-1.",
+    "producer_dashboard": "Use 'Bento Grid' for analytics. Dark cards with bright neon accents for the charts (Recharts).",
+    "hero_section": "Full screen height. Abstract waveform image as background with heavy black gradient fade at the bottom. Large typographic hierarchy."
+  },
+  "universal_guidelines": [
+    "NEVER use pure black (#000000) for cards. Use #0A0A0A or #121212.",
+    "Use 'border-white/5' or 'border-white/10' for all borders. Never solid grey.",
+    "All interactive elements must have a data-testid attribute.",
+    "Use 'sonner' for all toast notifications.",
+    "Images must have 'object-cover' and rounded corners.",
+    "Input fields should have a height of h-12 or h-14 for better touch targets.",
+    "Avoid standard scrollbars. Use 'tailwind-scrollbar-hide' or custom thin scrollbars."
+  ],
+  "accessibility": {
+    "contrast": "Ensure text is strictly readable on dark backgrounds. Use text-white for primary, text-neutral-400 for secondary.",
+    "focus": "focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+  }
+}
