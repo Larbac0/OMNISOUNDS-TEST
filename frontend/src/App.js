@@ -1,52 +1,83 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import '@/App.css';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import GlobalPlayer from '@/components/GlobalPlayer';
+import Home from '@/pages/Home';
+import Explore from '@/pages/Explore';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import Cart from '@/pages/Cart';
+import ProducerDashboard from '@/pages/producer/ProducerDashboard';
+import UploadBeat from '@/pages/producer/UploadBeat';
+import useAuthStore from '@/store/authStore';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+const ProtectedRoute = ({ children, requireProducer = false }) => {
+  const { isAuthenticated, user } = useAuthStore();
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+  if (requireProducer && user?.role !== 'PRODUCER' && user?.role !== 'ADMIN') {
+    return <Navigate to="/" replace />;
+  }
 
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
+  return children;
 };
 
 function App() {
   return (
     <div className="App">
+      {/* Noise overlay */}
+      <div className="noise-overlay" />
+      
       <BrowserRouter>
+        <Navbar />
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
+          <Route path="/" element={<Home />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/cart" element={<Cart />} />
+          
+          {/* Producer Routes */}
+          <Route
+            path="/producer"
+            element={
+              <ProtectedRoute requireProducer>
+                <ProducerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/producer/upload"
+            element={
+              <ProtectedRoute requireProducer>
+                <UploadBeat />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <Footer />
+        <GlobalPlayer />
       </BrowserRouter>
+
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: '#0A0A0A',
+            color: '#FFFFFF',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          },
+        }}
+      />
     </div>
   );
 }
