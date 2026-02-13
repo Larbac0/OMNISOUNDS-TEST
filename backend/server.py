@@ -602,6 +602,111 @@ async def get_producer_beats(current_user: dict = Depends(get_current_producer))
 # Include router
 app.include_router(api_router)
 
+# ==================== ASAAS WEBHOOK ====================
+
+@app.post("/webhook/asaas")
+async def asaas_webhook(request: Request):
+    """
+    Webhook endpoint for Asaas payment notifications.
+    Updates order status when payment is confirmed.
+    """
+    try:
+        payload = await request.json()
+        event = payload.get("event")
+        payment = payload.get("payment", {})
+        
+        logger.info(f"Asaas webhook received: {event}")
+        
+        payment_id = payment.get("id")
+        if not payment_id:
+            return JSONResponse({"success": True})
+        
+        # Find order by payment_id
+        order = await db.orders.find_one({"payment_id": payment_id}, {"_id": 0})
+        if not order:
+            logger.warning(f"Order not found for payment_id: {payment_id}")
+            return JSONResponse({"success": True})
+        
+        # Update order status based on event
+        new_status = None
+        
+        if event in ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]:
+            new_status = OrderStatus.PAID.value
+            
+            # Update beat sales count
+            for item in order.get("items", []):
+                await db.beats.update_one(
+                    {"id": item["beat_id"]},
+                    {"$inc": {"sales": 1}}
+                )
+            
+            logger.info(f"Order {order['id']} marked as PAID")
+            
+        elif event == "PAYMENT_OVERDUE":
+            new_status = OrderStatus.FAILED.value
+            logger.info(f"Order {order['id']} marked as FAILED (overdue)")
+            
+        elif event == "PAYMENT_REFUNDED":
+            new_status = OrderStatus.REFUNDED.value
+            logger.info(f"Order {order['id']} marked as REFUNDED")
+        
+        if new_status:
+            await db.orders.update_one(
+                {"id": order["id"]},
+                {"$set": {"status": new_status}}
+            )
+        
+        return JSONResponse({"success": True})
+        
+    except Exception as e:
+        logger.error(f"Webhook processing error: {e}")
+        return JSONResponse({"success": True})  # Always return 200 to avoid retries
+
+# ==================== DOWNLOADS ====================
+
+@api_router.get("/orders/{order_id}/download/{beat_id}")
+async def download_beat(
+    order_id: str,
+    beat_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Download a beat after purchase confirmation"""
+    # Verify order belongs to user and is paid
+    order = await db.orders.find_one({
+        "id": order_id,
+        "user_id": current_user["sub"],
+        "status": OrderStatus.PAID.value
+    }, {"_id": 0})
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found or not paid")
+    
+    # Check if beat is in order
+    beat_in_order = None
+    for item in order.get("items", []):
+        if item["beat_id"] == beat_id:
+            beat_in_order = item
+            break
+    
+    if not beat_in_order:
+        raise HTTPException(status_code=404, detail="Beat not in this order")
+    
+    # Get beat info
+    beat = await db.beats.find_one({"id": beat_id}, {"_id": 0})
+    if not beat:
+        raise HTTPException(status_code=404, detail="Beat not found")
+    
+    # Return download URL (for S3 files, generate presigned URL)
+    audio_url = beat.get("audio_url", "")
+    
+    # If using S3, the URL is already public
+    # For local files, return the relative path
+    return {
+        "download_url": audio_url,
+        "beat_title": beat["title"],
+        "license_type": beat_in_order["license_type"]
+    }
+
 # Mount uploads directory
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
