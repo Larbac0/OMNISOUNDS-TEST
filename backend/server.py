@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -10,17 +11,20 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import shutil
 import uuid
+import io
 
 from models import (
     User, UserCreate, UserLogin, UserUpdate,
     Beat, BeatCreate, BeatUpdate,
     Order, OrderCreate, OrderItem, OrderStatus,
-    Favorite, ProducerStats, UserRole, LicenseType
+    Favorite, ProducerStats, UserRole, LicenseType, BillingType
 )
 from auth import (
     get_password_hash, verify_password, create_access_token,
     get_current_user, get_current_producer
 )
+from services.asaas_service import asaas_service
+from services.s3_service import s3_service
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
