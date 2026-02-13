@@ -390,15 +390,16 @@ async def get_favorites(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/orders")
 async def create_order(order_data: OrderCreate, current_user: dict = Depends(get_current_user)):
-    """Create a new order"""
+    """Create a new order with Asaas payment and 80/20 split"""
     # Get beats info
     beat_ids = [item.beat_id for item in order_data.items]
     beats = await db.beats.find({"id": {"$in": beat_ids}}, {"_id": 0}).to_list(100)
     beats_dict = {beat["id"]: beat for beat in beats}
     
-    # Create order items
+    # Create order items and calculate total
     items = []
     total = 0
+    producer_ids = set()
     
     for item_data in order_data.items:
         beat = beats_dict.get(item_data.beat_id)
@@ -414,6 +415,10 @@ async def create_order(order_data: OrderCreate, current_user: dict = Depends(get
         )
         items.append(order_item)
         total += item_data.price
+        producer_ids.add(beat["producer_id"])
+    
+    # Get user info for Asaas customer
+    user = await db.users.find_one({"id": current_user["sub"]}, {"_id": 0})
     
     # Create order
     order = Order(
@@ -429,15 +434,86 @@ async def create_order(order_data: OrderCreate, current_user: dict = Depends(get
     for item in order.items:
         item.order_id = order.id
     
+    # Try to create Asaas payment
+    payment_response = None
+    pix_data = None
+    boleto_url = None
+    
+    try:
+        # Create or get Asaas customer
+        customer = await asaas_service.create_customer(
+            name=user["name"],
+            email=user["email"]
+        )
+        
+        # Update user with asaas_customer_id if not set
+        if not user.get("asaas_customer_id"):
+            await db.users.update_one(
+                {"id": current_user["sub"]},
+                {"$set": {"asaas_customer_id": customer["id"]}}
+            )
+        
+        # Get producer wallet ID (for split)
+        # For simplicity, we'll use the first producer's wallet
+        producer_wallet_id = None
+        if producer_ids:
+            first_producer = await db.users.find_one(
+                {"id": list(producer_ids)[0]},
+                {"_id": 0}
+            )
+            producer_wallet_id = first_producer.get("asaas_wallet_id") if first_producer else None
+        
+        # Create payment with split
+        payment_response = await asaas_service.create_payment_with_split(
+            customer_id=customer["id"],
+            value=total,
+            billing_type=order_data.billing_type.value,
+            description=f"OMINSOUNDS - Compra de {len(items)} beat(s)",
+            producer_wallet_id=producer_wallet_id or "",
+            producer_percentage=80.0,
+            platform_percentage=20.0
+        )
+        
+        order.payment_id = payment_response.get("id")
+        
+        # Get PIX QR Code if payment method is PIX
+        if order_data.billing_type == BillingType.PIX and payment_response.get("id"):
+            try:
+                pix_data = await asaas_service.get_pix_qr_code(payment_response["id"])
+            except Exception as e:
+                logger.warning(f"Failed to get PIX QR code: {e}")
+        
+        # Get boleto URL if payment method is BOLETO
+        if order_data.billing_type == BillingType.BOLETO and payment_response.get("id"):
+            boleto_url = payment_response.get("bankSlipUrl")
+        
+        logger.info(f"Asaas payment created: {payment_response.get('id')}")
+        
+    except Exception as e:
+        logger.warning(f"Asaas payment failed, order created without payment: {e}")
+        # Continue with order creation even if Asaas fails
+    
     order_dict = order.model_dump()
     order_dict["created_at"] = order_dict["created_at"].isoformat()
     
     await db.orders.insert_one(order_dict)
     
-    # Here you would integrate with Asaas payment gateway
-    # For now, we'll mock the payment
+    # Build response
+    response = order.model_dump()
+    if payment_response:
+        response["payment"] = {
+            "id": payment_response.get("id"),
+            "status": payment_response.get("status"),
+            "invoice_url": payment_response.get("invoiceUrl"),
+            "bank_slip_url": boleto_url
+        }
+    if pix_data:
+        response["pix"] = {
+            "qr_code": pix_data.get("encodedImage"),
+            "copy_paste": pix_data.get("payload")
+        }
     
-    return order.model_dump()
+    return response
 
 @api_router.get("/orders")
 async def get_orders(current_user: dict = Depends(get_current_user)):
