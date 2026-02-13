@@ -156,20 +156,47 @@ async def create_beat(
     current_user: dict = Depends(get_current_producer)
 ):
     """Create a new beat (Producer only)"""
-    # Save audio file
-    audio_filename = f"{uuid.uuid4()}_{audio_file.filename}"
-    audio_path = UPLOADS_DIR / "audio" / audio_filename
-    with open(audio_path, "wb") as buffer:
-        shutil.copyfileobj(audio_file.file, buffer)
     
-    # Save image file
+    # Try to upload to S3, fallback to local storage
+    audio_url = None
     image_url = None
+    
+    # Upload audio file
+    audio_content = await audio_file.read()
+    if s3_service.enabled:
+        audio_url = await s3_service.upload_file(
+            io.BytesIO(audio_content),
+            audio_file.filename,
+            audio_file.content_type or 'audio/mpeg',
+            'audio'
+        )
+    
+    if not audio_url:
+        # Fallback to local storage
+        audio_filename = f"{uuid.uuid4()}_{audio_file.filename}"
+        audio_path = UPLOADS_DIR / "audio" / audio_filename
+        with open(audio_path, "wb") as buffer:
+            buffer.write(audio_content)
+        audio_url = f"/uploads/audio/{audio_filename}"
+    
+    # Upload image file
     if image_file:
-        image_filename = f"{uuid.uuid4()}_{image_file.filename}"
-        image_path = UPLOADS_DIR / "images" / image_filename
-        with open(image_path, "wb") as buffer:
-            shutil.copyfileobj(image_file.file, buffer)
-        image_url = f"/uploads/images/{image_filename}"
+        image_content = await image_file.read()
+        if s3_service.enabled:
+            image_url = await s3_service.upload_file(
+                io.BytesIO(image_content),
+                image_file.filename,
+                image_file.content_type or 'image/jpeg',
+                'images'
+            )
+        
+        if not image_url:
+            # Fallback to local storage
+            image_filename = f"{uuid.uuid4()}_{image_file.filename}"
+            image_path = UPLOADS_DIR / "images" / image_filename
+            with open(image_path, "wb") as buffer:
+                buffer.write(image_content)
+            image_url = f"/uploads/images/{image_filename}"
     
     # Get producer info
     producer = await db.users.find_one({"id": current_user["sub"]}, {"_id": 0})
@@ -185,7 +212,7 @@ async def create_beat(
         description=description,
         producer_id=current_user["sub"],
         producer_name=producer["name"],
-        audio_url=f"/uploads/audio/{audio_filename}",
+        audio_url=audio_url,
         image_url=image_url
     )
     
