@@ -72,14 +72,13 @@ class S3Service:
             # Generate unique key
             key = self.generate_unique_filename(filename, folder)
             
-            # Upload to S3
+            # Upload to S3 (without ACL - bucket policy should handle public access)
             self.s3_client.upload_fileobj(
                 file_content,
                 self.bucket_name,
                 key,
                 ExtraArgs={
-                    'ContentType': content_type,
-                    'ACL': 'public-read'
+                    'ContentType': content_type
                 }
             )
             
