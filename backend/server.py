@@ -420,6 +420,17 @@ async def create_order(order_data: OrderCreate, current_user: dict = Depends(get
     # Get user info for Asaas customer
     user = await db.users.find_one({"id": current_user["sub"]}, {"_id": 0})
     
+    # Get CPF from order data or user profile
+    cpf = order_data.cpf or user.get("cpf")
+    phone = order_data.phone or user.get("phone")
+    
+    # Update user with CPF if provided and not already set
+    if order_data.cpf and not user.get("cpf"):
+        await db.users.update_one(
+            {"id": current_user["sub"]},
+            {"$set": {"cpf": order_data.cpf}}
+        )
+    
     # Create order
     order = Order(
         user_id=current_user["sub"],
@@ -440,10 +451,12 @@ async def create_order(order_data: OrderCreate, current_user: dict = Depends(get
     boleto_url = None
     
     try:
-        # Create or get Asaas customer
+        # Create or get Asaas customer (with CPF)
         customer = await asaas_service.create_customer(
             name=user["name"],
-            email=user["email"]
+            email=user["email"],
+            cpf_cnpj=cpf,
+            phone=phone
         )
         
         # Update user with asaas_customer_id if not set
