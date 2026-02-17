@@ -4,30 +4,35 @@ import os
 from typing import BinaryIO, Optional
 from botocore.exceptions import ClientError
 import uuid
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file
+ROOT_DIR = Path(__file__).parent.parent
+load_dotenv(ROOT_DIR / '.env')
 
 logger = logging.getLogger(__name__)
 
-AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
-AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
-AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
-S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "")
-
 class S3Service:
     def __init__(self):
-        self.bucket_name = S3_BUCKET_NAME
-        self.region = AWS_REGION
+        self.access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
+        self.secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+        self.region = os.environ.get("AWS_REGION", "sa-east-1")
+        self.bucket_name = os.environ.get("S3_BUCKET_NAME", "")
         
-        if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        if self.access_key and self.secret_key and self.bucket_name:
             self.s3_client = boto3.client(
                 's3',
-                aws_access_key_id=AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                region_name=AWS_REGION
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                region_name=self.region
             )
             self.enabled = True
-            logger.info("S3 Service initialized with credentials")
+            logger.info(f"S3 Service initialized - Bucket: {self.bucket_name}, Region: {self.region}")
         else:
             self.s3_client = None
+            self.enabled = False
+            logger.warning("S3 Service disabled - missing AWS credentials or bucket name")
             self.enabled = False
             logger.warning("S3 Service disabled - no AWS credentials provided")
     
