@@ -126,6 +126,8 @@ class OrderItem(BaseModel):
 class OrderCreate(BaseModel):
     items: List[OrderItemCreate]
     billing_type: BillingType
+    cpf: Optional[str] = None  # CPF for payment processing
+    phone: Optional[str] = None  # Phone for customer contact
 
 class Order(BaseModel):
     model_config = ConfigDict(extra="ignore")
