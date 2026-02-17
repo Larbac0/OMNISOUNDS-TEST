@@ -51,6 +51,8 @@ class User(BaseModel):
     role: UserRole
     avatar: Optional[str] = None
     bio: Optional[str] = None
+    cpf: Optional[str] = None  # CPF for payments
+    phone: Optional[str] = None
     asaas_wallet_id: Optional[str] = None  # Wallet ID for payment splits (producers)
     asaas_customer_id: Optional[str] = None  # Customer ID for payments (buyers)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -59,6 +61,8 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     bio: Optional[str] = None
     avatar: Optional[str] = None
+    cpf: Optional[str] = None
+    phone: Optional[str] = None
     asaas_wallet_id: Optional[str] = None  # Producers can add their Asaas wallet ID
 
 # Beat Models
