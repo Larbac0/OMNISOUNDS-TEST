@@ -3,18 +3,20 @@ import logging
 import os
 from typing import Optional, Dict, Any
 from datetime import datetime
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file
+ROOT_DIR = Path(__file__).parent.parent
+load_dotenv(ROOT_DIR / '.env')
 
 logger = logging.getLogger(__name__)
 
-ASAAS_API_URL = os.environ.get("ASAAS_API_URL", "https://sandbox.asaas.com/api/v3")
-ASAAS_API_KEY = os.environ.get("ASAAS_API_KEY", "")
-PLATFORM_WALLET_ID = os.environ.get("ASAAS_PLATFORM_WALLET_ID", "")
-
 class AsaasService:
     def __init__(self):
-        self.api_url = ASAAS_API_URL
-        self.api_key = ASAAS_API_KEY
-        self.platform_wallet_id = PLATFORM_WALLET_ID
+        self.api_url = os.environ.get("ASAAS_API_URL", "https://sandbox.asaas.com/api/v3")
+        self.api_key = os.environ.get("ASAAS_API_KEY", "")
+        self.platform_wallet_id = os.environ.get("ASAAS_PLATFORM_WALLET_ID", "")
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
