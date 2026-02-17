@@ -1,23 +1,32 @@
 import React, { useEffect, useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Lock, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
 import usePlayerStore from '@/store/playerStore';
-import { API_URL } from '@/services/api';
+import useCartStore from '@/store/cartStore';
+import { toast } from 'sonner';
 
 const GlobalPlayer = () => {
+  const navigate = useNavigate();
   const {
     currentBeat,
     isPlaying,
     audioElement,
     duration,
     currentTime,
+    isPreviewMode,
+    previewEnded,
     setAudioElement,
     setDuration,
     setCurrentTime,
     togglePlay,
     seek,
+    PREVIEW_DURATION,
   } = usePlayerStore();
+  
+  const { addItem } = useCartStore();
 
   const audioRef = useRef(null);
 
@@ -30,7 +39,11 @@ const GlobalPlayer = () => {
   useEffect(() => {
     if (audioElement && currentBeat) {
       const backendUrl = process.env.REACT_APP_BACKEND_URL;
-      audioElement.src = `${backendUrl}${currentBeat.audio_url}`;
+      // Handle both S3 URLs and local URLs
+      const audioUrl = currentBeat.audio_url.startsWith('http') 
+        ? currentBeat.audio_url 
+        : `${backendUrl}${currentBeat.audio_url}`;
+      audioElement.src = audioUrl;
       audioElement.load();
     }
   }, [currentBeat, audioElement]);
@@ -73,12 +86,33 @@ const GlobalPlayer = () => {
     seek(value[0]);
   };
 
+  const handleBuyNow = () => {
+    if (currentBeat) {
+      addItem(currentBeat, 'MP3', currentBeat.price_mp3);
+      toast.success('Adicionado ao carrinho!');
+      navigate('/cart');
+    }
+  };
+
+  // Get effective max for slider
+  const effectiveMax = isPreviewMode ? Math.min(duration || 100, PREVIEW_DURATION) : (duration || 100);
+
   if (!currentBeat) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4" data-testid="global-player">
       <div className="max-w-5xl mx-auto glass rounded-3xl p-6 shadow-2xl">
         <audio ref={audioRef} />
+        
+        {/* Preview Mode Banner */}
+        {isPreviewMode && (
+          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+            <Badge className="bg-yellow-500/90 text-black font-medium px-3 py-1 rounded-full">
+              <Lock className="w-3 h-3 mr-1" />
+              Preview 30s
+            </Badge>
+          </div>
+        )}
         
         <div className="flex items-center gap-6">
           {/* Beat Info */}
@@ -138,34 +172,65 @@ const GlobalPlayer = () => {
               <span className="text-xs text-muted-foreground" style={{ fontFamily: 'JetBrains Mono' }}>
                 {formatTime(currentTime)}
               </span>
-              <Slider
-                value={[currentTime]}
-                max={duration || 100}
-                step={0.1}
-                onValueChange={handleSeek}
-                className="flex-1"
-                data-testid="player-progress-slider"
-              />
+              <div className="flex-1 relative">
+                <Slider
+                  value={[Math.min(currentTime, effectiveMax)]}
+                  max={effectiveMax}
+                  step={0.1}
+                  onValueChange={handleSeek}
+                  className="flex-1"
+                  data-testid="player-progress-slider"
+                />
+                {/* Preview limit indicator */}
+                {isPreviewMode && duration > PREVIEW_DURATION && (
+                  <div 
+                    className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-yellow-500"
+                    style={{ left: `${(PREVIEW_DURATION / duration) * 100}%` }}
+                  />
+                )}
+              </div>
               <span className="text-xs text-muted-foreground" style={{ fontFamily: 'JetBrains Mono' }}>
-                {formatTime(duration)}
+                {isPreviewMode ? formatTime(PREVIEW_DURATION) : formatTime(duration)}
               </span>
             </div>
+            
+            {/* Preview Ended Message */}
+            {previewEnded && (
+              <p className="text-xs text-yellow-500 animate-pulse">
+                Preview finalizado - Compre para ouvir completo!
+              </p>
+            )}
           </div>
 
-          {/* Volume */}
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            <Volume2 className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
-            <Slider
-              defaultValue={[100]}
-              max={100}
-              step={1}
-              className="w-24"
-              onValueChange={(value) => {
-                if (audioElement) {
-                  audioElement.volume = value[0] / 100;
-                }
-              }}
-            />
+          {/* Volume + Buy Button */}
+          <div className="flex items-center gap-4 flex-1 justify-end">
+            <div className="flex items-center gap-2">
+              <Volume2 className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
+              <Slider
+                defaultValue={[100]}
+                max={100}
+                step={1}
+                className="w-24"
+                onValueChange={(value) => {
+                  if (audioElement) {
+                    audioElement.volume = value[0] / 100;
+                  }
+                }}
+              />
+            </div>
+            
+            {/* Buy Now Button (only in preview mode) */}
+            {isPreviewMode && (
+              <Button
+                onClick={handleBuyNow}
+                size="sm"
+                className="rounded-full bg-green-600 hover:bg-green-700 text-white px-4"
+                data-testid="player-buy-button"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                R$ {currentBeat.price_mp3?.toFixed(2)}
+              </Button>
+            )}
           </div>
         </div>
       </div>
