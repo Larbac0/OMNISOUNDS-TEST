@@ -17,10 +17,12 @@ class AsaasService:
         self.api_url = os.environ.get("ASAAS_API_URL", "https://sandbox.asaas.com/api/v3")
         self.api_key = os.environ.get("ASAAS_API_KEY", "")
         self.platform_wallet_id = os.environ.get("ASAAS_PLATFORM_WALLET_ID", "")
+        # Asaas uses 'access_token' header for authentication
         self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "access_token": self.api_key,
             "Content-Type": "application/json"
         }
+        logger.info(f"Asaas Service initialized - API URL: {self.api_url}")
     
     async def create_customer(
         self,
