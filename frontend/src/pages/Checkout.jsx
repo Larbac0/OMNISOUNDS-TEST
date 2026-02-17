@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, QrCode, FileText, Loader2, CheckCircle, Copy } from 'lucide-react';
+import { CreditCard, QrCode, FileText, Loader2, CheckCircle, Copy, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,16 @@ import useAuthStore from '@/store/authStore';
 import { ordersAPI } from '@/services/api';
 import { toast } from 'sonner';
 
+// CPF mask function
+const formatCPF = (value) => {
+  const numbers = value.replace(/\D/g, '');
+  return numbers
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1');
+};
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, getTotal, clearCart } = useCartStore();
@@ -18,6 +28,8 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [orderCreated, setOrderCreated] = useState(null);
   const [pixData, setPixData] = useState(null);
+  const [cpf, setCpf] = useState('');
+  const [phone, setPhone] = useState('');
   
   // Credit card form state
   const [cardData, setCardData] = useState({
@@ -40,8 +52,20 @@ const Checkout = () => {
     return null;
   }
 
+  const handleCpfChange = (e) => {
+    setCpf(formatCPF(e.target.value));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate CPF
+    const cpfNumbers = cpf.replace(/\D/g, '');
+    if (cpfNumbers.length !== 11) {
+      toast.error('CPF inválido. Digite os 11 dígitos.');
+      return;
+    }
+    
     setLoading(true);
 
     try {
