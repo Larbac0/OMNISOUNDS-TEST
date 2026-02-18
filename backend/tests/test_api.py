@@ -8,7 +8,7 @@ import os
 import uuid
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ominsounds-preview.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://producer-hub-17.preview.emergentagent.com')
 
 # Test data
 TEST_USER_EMAIL = f"test_user_{uuid.uuid4().hex[:8]}@test.com"
