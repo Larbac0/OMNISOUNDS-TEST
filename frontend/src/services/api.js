@@ -67,6 +67,7 @@ export const ordersAPI = {
   getAll: () => api.get('/orders'),
   getById: (id) => api.get(`/orders/${id}`),
   create: (data) => api.post('/orders', data),
+  download: (orderId, beatId) => api.get(`/orders/${orderId}/download/${beatId}`),
 };
 
 export default api;
