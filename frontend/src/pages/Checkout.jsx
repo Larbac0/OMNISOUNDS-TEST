@@ -75,7 +75,9 @@ const Checkout = () => {
           license_type: item.licenseType,
           price: item.price
         })),
-        billing_type: paymentMethod
+        billing_type: paymentMethod,
+        cpf: cpf.replace(/\D/g, ''),
+        phone: phone.replace(/\D/g, '')
       };
 
       const response = await ordersAPI.create(orderData);
