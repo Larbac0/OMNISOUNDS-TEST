@@ -284,6 +284,42 @@ const Checkout = () => {
                 </RadioGroup>
               </div>
 
+              {/* Personal Info (CPF) */}
+              <div className="glass rounded-2xl p-6 space-y-4">
+                <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: 'Manrope' }}>
+                  Dados Pessoais
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="cpf">CPF *</Label>
+                    <Input
+                      id="cpf"
+                      placeholder="000.000.000-00"
+                      value={cpf}
+                      onChange={handleCpfChange}
+                      maxLength={14}
+                      className="bg-black/20 border-white/10 mt-1"
+                      data-testid="checkout-cpf"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Obrigatório para processamento do pagamento</p>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      placeholder="(00) 00000-0000"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="bg-black/20 border-white/10 mt-1"
+                      data-testid="checkout-phone"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Credit Card Form */}
               {paymentMethod === 'CREDIT_CARD' && (
                 <div className="glass rounded-2xl p-6 space-y-4">
