@@ -38,7 +38,7 @@ const GlobalPlayer = () => {
 
   useEffect(() => {
     if (audioElement && currentBeat) {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL;
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
       // Handle both S3 URLs and local URLs
       const audioUrl = currentBeat.audio_url.startsWith('http') 
         ? currentBeat.audio_url 
