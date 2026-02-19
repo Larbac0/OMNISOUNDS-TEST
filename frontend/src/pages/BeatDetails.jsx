@@ -47,7 +47,7 @@ const BeatDetails = () => {
 
         const audioUrl = beat.audio_url.startsWith('http') 
           ? beat.audio_url 
-          : `${process.env.REACT_APP_BACKEND_URL}${beat.audio_url}`;
+          : `${import.meta.env.VITE_BACKEND_URL}${beat.audio_url}`;
         
         wavesurferRef.current.load(audioUrl);
       });
