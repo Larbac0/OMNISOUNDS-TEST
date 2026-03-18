@@ -63,6 +63,7 @@ class UserUpdate(BaseModel):
     avatar: Optional[str] = None
     cpf: Optional[str] = None
     phone: Optional[str] = None
+    password: Optional[str] = None
     asaas_wallet_id: Optional[str] = None  # Producers can add their Asaas wallet ID
 
 # Beat Models

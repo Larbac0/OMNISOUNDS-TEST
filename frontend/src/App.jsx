@@ -14,6 +14,7 @@ import Register from '@/pages/Register';
 import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
 import Orders from '@/pages/Orders';
+import Profile from '@/pages/Profile';            // ✅ NOVO
 import ProducerDashboard from '@/pages/producer/ProducerDashboard';
 import UploadBeat from '@/pages/producer/UploadBeat';
 import useAuthStore from '@/store/authStore';
@@ -41,13 +42,18 @@ function App() {
       <BrowserRouter>
         <Navbar />
         <Routes>
+          {/* Rotas públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/beats/:id" element={<BeatDetails />} />
           <Route path="/producer/:id" element={<ProducerProfile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* Carrinho: público (redireciona para login apenas no checkout) */}
           <Route path="/cart" element={<Cart />} />
+
+          {/* Rotas protegidas */}
           <Route
             path="/checkout"
             element={
@@ -64,8 +70,27 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
-          {/* Producer Routes */}
+          {/* ✅ Página de perfil do usuário */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Alias /settings → /profile para compatibilidade */}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/profile" replace />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas de produtor */}
           <Route
             path="/producer"
             element={

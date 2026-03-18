@@ -122,22 +122,85 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     
     return User(**user).model_dump()
 
-@api_router.put("/users/profile")
+@api_router.put("/users/profile")   
 async def update_profile(update_data: UserUpdate, current_user: dict = Depends(get_current_user)):
-    """Update user profile"""
-    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
-    
-    if update_dict:
-        await db.users.update_one(
-            {"id": current_user["sub"]},
-            {"$set": update_dict}
+        """Update user profile"""
+        update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+
+        if "password" in update_dict:
+            update_dict["password"] = get_password_hash(update_dict["password"])
+
+        if update_dict:
+            await db.users.update_one(
+                {"id": current_user["sub"]},
+                {"$set": update_dict}
+            )
+
+        user = await db.users.find_one({"id": current_user["sub"]}, {"_id": 0, "password": 0})
+        if isinstance(user["created_at"], str):
+            user["created_at"] = datetime.fromisoformat(user["created_at"])
+
+        return User(**user).model_dump()
+
+
+@api_router.post("/users/avatar")
+async def upload_avatar(
+    avatar: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Upload de foto de perfil do usuário.
+    Aceita JPG, PNG, GIF, WEBP (máx 5MB).
+    Retorna a URL pública da imagem salva.
+    """
+    # Validar tipo de arquivo
+    allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+    if avatar.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato de imagem inválido. Use JPG, PNG, GIF ou WEBP."
         )
-    
-    user = await db.users.find_one({"id": current_user["sub"]}, {"_id": 0, "password": 0})
-    if isinstance(user["created_at"], str):
-        user["created_at"] = datetime.fromisoformat(user["created_at"])
-    
-    return User(**user).model_dump()
+
+    # Validar tamanho (5MB)
+    contents = await avatar.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=400,
+            detail="A imagem deve ter no máximo 5MB."
+        )
+
+    # Gerar nome único
+    ext = avatar.filename.rsplit(".", 1)[-1] if "." in avatar.filename else "jpg"
+    filename = f"{current_user['sub']}_avatar.{ext}"
+
+    # Tentar salvar no S3
+    avatar_url = None
+    try:
+        s3_key = f"avatars/{filename}"
+        avatar_url = await s3_service.upload_file(
+            file_content=io.BytesIO(contents),
+            key=s3_key,
+            content_type=avatar.content_type
+        )
+        logger.info(f"Avatar saved to S3: {s3_key}")
+    except Exception as e:
+        logger.warning(f"S3 upload failed, falling back to local: {e}")
+        # Fallback: salvar localmente
+        avatar_dir = UPLOADS_DIR / "avatars"
+        avatar_dir.mkdir(exist_ok=True)
+        file_path = avatar_dir / filename
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        avatar_url = f"/uploads/avatars/{filename}"
+
+    # Atualizar no banco
+    await db.users.update_one(
+        {"id": current_user["sub"]},
+        {"$set": {"avatar": avatar_url}}
+    )
+
+    return {"avatar_url": avatar_url, "message": "Avatar atualizado com sucesso"}
+
 
 # ==================== BEATS ROUTES ====================
 
