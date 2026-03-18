@@ -323,7 +323,7 @@ class TestProducers:
 
 
 class TestOrders:
-    """Test order creation and retrieval"""
+    """Test order creation and retrieval - including CPF field for Asaas"""
     
     @pytest.fixture
     def order_setup(self):
@@ -368,8 +368,8 @@ class TestOrders:
             "user": user_data
         }
     
-    def test_create_order_pix(self, order_setup):
-        """Create order with PIX payment method"""
+    def test_create_order_pix_with_cpf(self, order_setup):
+        """Create order with PIX payment method and CPF (required for Asaas)"""
         response = requests.post(
             f"{BASE_URL}/api/orders",
             json={
@@ -378,7 +378,9 @@ class TestOrders:
                     "license_type": "MP3",
                     "price": order_setup["beat"]["price_mp3"]
                 }],
-                "billing_type": "PIX"
+                "billing_type": "PIX",
+                "cpf": "12345678909",
+                "phone": "11999999999"
             },
             headers={"Authorization": f"Bearer {order_setup['user']['token']}"}
         )
@@ -390,11 +392,11 @@ class TestOrders:
         assert order["status"] == "PENDING"
         assert order["billing_type"] == "PIX"
         assert len(order["items"]) == 1
-        print(f"Order created with PIX: {order['id']}, status: {order['status']}")
+        print(f"Order created with PIX + CPF: {order['id']}, status: {order['status']}")
         return order
     
-    def test_create_order_credit_card(self, order_setup):
-        """Create order with credit card payment method"""
+    def test_create_order_credit_card_with_cpf(self, order_setup):
+        """Create order with credit card payment method and CPF"""
         response = requests.post(
             f"{BASE_URL}/api/orders",
             json={
@@ -403,7 +405,9 @@ class TestOrders:
                     "license_type": "WAV",
                     "price": order_setup["beat"]["price_wav"]
                 }],
-                "billing_type": "CREDIT_CARD"
+                "billing_type": "CREDIT_CARD",
+                "cpf": "98765432100",
+                "phone": "21988888888"
             },
             headers={"Authorization": f"Bearer {order_setup['user']['token']}"}
         )
@@ -411,10 +415,10 @@ class TestOrders:
         assert response.status_code == 200
         order = response.json()
         assert order["billing_type"] == "CREDIT_CARD"
-        print(f"Order created with Credit Card: {order['id']}")
+        print(f"Order created with Credit Card + CPF: {order['id']}")
     
-    def test_create_order_boleto(self, order_setup):
-        """Create order with boleto payment method"""
+    def test_create_order_boleto_with_cpf(self, order_setup):
+        """Create order with boleto payment method and CPF"""
         response = requests.post(
             f"{BASE_URL}/api/orders",
             json={
@@ -423,7 +427,9 @@ class TestOrders:
                     "license_type": "EXCLUSIVE",
                     "price": order_setup["beat"]["price_exclusive"]
                 }],
-                "billing_type": "BOLETO"
+                "billing_type": "BOLETO",
+                "cpf": "11122233344",
+                "phone": "31977777777"
             },
             headers={"Authorization": f"Bearer {order_setup['user']['token']}"}
         )
@@ -431,7 +437,7 @@ class TestOrders:
         assert response.status_code == 200
         order = response.json()
         assert order["billing_type"] == "BOLETO"
-        print(f"Order created with Boleto: {order['id']}")
+        print(f"Order created with Boleto + CPF: {order['id']}")
     
     def test_get_user_orders(self, order_setup):
         """Get list of user's orders"""
@@ -477,6 +483,92 @@ class TestOrders:
         
         assert response.status_code in [401, 403]
         print("Order creation without auth correctly rejected")
+
+
+class TestDownloads:
+    """Test download endpoint for PAID orders"""
+    
+    def test_download_without_paid_order_fails(self):
+        """Download should fail if order is not PAID"""
+        # Create user
+        user_email = f"test_dl_user_{uuid.uuid4().hex[:8]}@test.com"
+        user_resp = requests.post(f"{BASE_URL}/api/auth/register", json={
+            "email": user_email,
+            "name": "Download User",
+            "password": TEST_PASSWORD,
+            "role": "USER"
+        })
+        user_data = user_resp.json()
+        
+        # Create producer and beat
+        producer_email = f"test_dl_producer_{uuid.uuid4().hex[:8]}@test.com"
+        producer_resp = requests.post(f"{BASE_URL}/api/auth/register", json={
+            "email": producer_email,
+            "name": "Download Producer",
+            "password": TEST_PASSWORD,
+            "role": "PRODUCER"
+        })
+        producer_data = producer_resp.json()
+        
+        audio_content = b"RIFF" + b"\x00" * 1000
+        files = {'audio_file': ('test.mp3', io.BytesIO(audio_content), 'audio/mpeg')}
+        data = {
+            'title': f'TEST_DownloadBeat_{uuid.uuid4().hex[:8]}',
+            'bpm': 120, 'key': 'C Minor', 'genre': 'Trap',
+            'price_mp3': 25.00, 'price_wav': 45.00, 'price_exclusive': 150.00
+        }
+        beat_resp = requests.post(
+            f"{BASE_URL}/api/beats", files=files, data=data,
+            headers={"Authorization": f"Bearer {producer_data['token']}"}
+        )
+        beat = beat_resp.json()
+        
+        # Create order (PENDING status)
+        order_resp = requests.post(
+            f"{BASE_URL}/api/orders",
+            json={
+                "items": [{
+                    "beat_id": beat["id"],
+                    "license_type": "MP3",
+                    "price": beat["price_mp3"]
+                }],
+                "billing_type": "PIX",
+                "cpf": "12345678909"
+            },
+            headers={"Authorization": f"Bearer {user_data['token']}"}
+        )
+        order = order_resp.json()
+        
+        # Try to download - should fail (order is PENDING, not PAID)
+        download_resp = requests.get(
+            f"{BASE_URL}/api/orders/{order['id']}/download/{beat['id']}",
+            headers={"Authorization": f"Bearer {user_data['token']}"}
+        )
+        
+        assert download_resp.status_code == 404, f"Expected 404 for PENDING order download, got {download_resp.status_code}"
+        print("Download correctly rejected for PENDING order")
+    
+    def test_download_nonexistent_order_fails(self):
+        """Download should fail for nonexistent order"""
+        user_email = f"test_dl_fail_user_{uuid.uuid4().hex[:8]}@test.com"
+        user_resp = requests.post(f"{BASE_URL}/api/auth/register", json={
+            "email": user_email,
+            "name": "Fail Download User",
+            "password": TEST_PASSWORD,
+            "role": "USER"
+        })
+        user_data = user_resp.json()
+        
+        fake_order_id = str(uuid.uuid4())
+        fake_beat_id = str(uuid.uuid4())
+        
+        download_resp = requests.get(
+            f"{BASE_URL}/api/orders/{fake_order_id}/download/{fake_beat_id}",
+            headers={"Authorization": f"Bearer {user_data['token']}"}
+        )
+        
+        assert download_resp.status_code == 404
+        print("Download correctly fails for nonexistent order")
 
 
 class TestFavorites:
