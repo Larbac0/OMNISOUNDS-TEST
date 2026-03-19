@@ -784,7 +784,7 @@ async def download_beat(
     }
 
 # Mount uploads directory
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # CORS
 app.add_middleware(

@@ -15,17 +15,26 @@ const Home = () => {
     fetchBeats();
   }, []);
 
-  const fetchBeats = async () => {
-    try {
-      const response = await beatsAPI.getAll({ limit: 6 });
-      setFeaturedBeats(response.data);
-    } catch (error) {
-      console.error('Error fetching beats:', error);
-      toast.error('Erro ao carregar beats');
-    } finally {
-      setLoading(false);
+const fetchBeats = async () => {
+  try {
+    const response = await beatsAPI.getAll({ limit: 6 });
+    const data = response.data;
+    
+    // Suporta os dois formatos: array direto [] ou objeto {beats: []}
+    if (Array.isArray(data)) {
+      setFeaturedBeats(data);
+    } else if (data && Array.isArray(data.beats)) {
+      setFeaturedBeats(data.beats);
+    } else {
+      setFeaturedBeats([]);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching beats:', error);
+    setFeaturedBeats([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen">

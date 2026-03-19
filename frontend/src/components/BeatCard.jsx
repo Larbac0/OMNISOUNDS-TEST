@@ -1,30 +1,73 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Pause, Heart, ShoppingCart } from 'lucide-react';
+import { Play, Pause, Heart, ShoppingCart, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import usePlayerStore from '@/store/playerStore';
 import useCartStore from '@/store/cartStore';
+import useAuthStore from '@/store/authStore';
 import { toast } from 'sonner';
 
 const BeatCard = ({ beat, featured = false }) => {
   const navigate = useNavigate();
-  const { currentBeat, isPlaying, setCurrentBeat, togglePlay } = usePlayerStore();
+  const { currentBeat, isPlaying, setCurrentBeat, togglePlay, audioElement } = usePlayerStore();
   const { addItem } = useCartStore();
+  const { user } = useAuthStore();
 
   const isCurrentBeat = currentBeat?.id === beat.id;
 
+  // Verifica se este beat pertence ao produtor logado
+  const isOwnBeat = user?.role === 'PRODUCER' && user?.id === beat.producer_id;
+
   const handlePlay = (e) => {
     e.stopPropagation();
+
     if (isCurrentBeat) {
+      // Já é o beat atual — só alterna play/pause
       togglePlay();
-    } else {
-      setCurrentBeat(beat);
-      setTimeout(() => togglePlay(), 100);
+      return;
     }
+
+    // Novo beat: define o beat e espera o áudio carregar para tocar
+    setCurrentBeat(beat);
+
+    // Aguarda o elemento de áudio estar pronto
+    const waitAndPlay = () => {
+      const audio = usePlayerStore.getState().audioElement;
+      if (!audio) return;
+
+      const tryPlay = () => {
+        audio.play()
+          .then(() => {
+            usePlayerStore.setState({ isPlaying: true, previewEnded: false });
+          })
+          .catch((err) => {
+            console.error('Erro ao tocar áudio:', err);
+          });
+        audio.removeEventListener('canplay', tryPlay);
+      };
+
+      // Se já tem src carregado, toca direto; senão aguarda canplay
+      if (audio.readyState >= 3) {
+        audio.play()
+          .then(() => usePlayerStore.setState({ isPlaying: true, previewEnded: false }))
+          .catch(console.error);
+      } else {
+        audio.addEventListener('canplay', tryPlay);
+      }
+    };
+
+    // Pequeno delay para o useEffect do GlobalPlayer definir o src
+    setTimeout(waitAndPlay, 50);
   };
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
+
+    if (isOwnBeat) {
+      toast.error('Você não pode comprar seu próprio beat!');
+      return;
+    }
+
     addItem(beat, 'MP3', beat.price_mp3);
     toast.success('Adicionado ao carrinho!');
   };
@@ -38,16 +81,23 @@ const BeatCard = ({ beat, featured = false }) => {
       data-testid={`beat-card-${beat.id}`}
     >
       {/* Image */}
-      <div className={`relative ${
-        featured ? 'h-64 md:h-full' : 'h-48'
-      } overflow-hidden`}>
+      <div className={`relative ${featured ? 'h-64 md:h-full' : 'h-48'} overflow-hidden`}>
         <img
           src={beat.image_url || 'https://images.unsplash.com/photo-1694843689189-2ad1a6c4a364?q=85'}
           alt={beat.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-        
+
+        {/* Badge "Seu beat" para produtor */}
+        {isOwnBeat && (
+          <div className="absolute top-3 left-3">
+            <span className="px-2 py-1 rounded-full bg-primary/80 text-white text-xs font-medium">
+              Seu beat
+            </span>
+          </div>
+        )}
+
         {/* Play Button Overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Button
@@ -89,7 +139,10 @@ const BeatCard = ({ beat, featured = false }) => {
         </div>
 
         {/* Beat Info */}
-        <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground" style={{ fontFamily: 'JetBrains Mono' }}>
+        <div
+          className="flex items-center gap-4 mb-3 text-xs text-muted-foreground"
+          style={{ fontFamily: 'JetBrains Mono' }}
+        >
           <span>{beat.bpm} BPM</span>
           <span>{beat.key}</span>
           <span className="px-2 py-1 rounded-md bg-white/5">{beat.genre}</span>
@@ -99,18 +152,30 @@ const BeatCard = ({ beat, featured = false }) => {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-lg font-bold text-primary">
-              R$ {beat.price_mp3.toFixed(2)}
+              R$ {beat.price_mp3?.toFixed(2)}
             </span>
             <span className="text-xs text-muted-foreground ml-1">MP3</span>
           </div>
-          <Button
-            onClick={handleAddToCart}
-            size="sm"
-            className="rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
-            data-testid={`add-to-cart-${beat.id}`}
-          >
-            <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
+
+          {/* Botão de carrinho — bloqueado para próprios beats */}
+          {isOwnBeat ? (
+            <div
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 text-muted-foreground text-xs cursor-not-allowed"
+              title="Você não pode comprar seu próprio beat"
+            >
+              <Lock className="w-3 h-3" strokeWidth={1.5} />
+              Seu beat
+            </div>
+          ) : (
+            <Button
+              onClick={handleAddToCart}
+              size="sm"
+              className="rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
+              data-testid={`add-to-cart-${beat.id}`}
+            >
+              <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+          )}
         </div>
       </div>
     </div>

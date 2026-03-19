@@ -13,16 +13,22 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     strictPort: true,
-    allowedHosts: true,
-    hmr: {
-      clientPort: 443,
-    },
+    // ✅ Removido hmr clientPort: 443 (era do Emergent)
+  },
+  define: {
+    'process.env': {},
   },
   build: {
     outDir: 'build',
     sourcemap: true,
-  },
-  define: {
-    'process.env': {},
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['lucide-react'],
+          'audio-vendor': ['wavesurfer.js'],
+        }
+      }
+    }
   },
 });

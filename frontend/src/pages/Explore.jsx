@@ -37,7 +37,7 @@ const Explore = () => {
       if (filters.maxBpm) params.max_bpm = parseInt(filters.maxBpm);
 
       const response = await beatsAPI.getAll(params);
-      setBeats(response.data);
+      setBeats(response.data.beats || response.data || []);
     } catch (error) {
       console.error('Error fetching beats:', error);
       toast.error('Erro ao carregar beats');
